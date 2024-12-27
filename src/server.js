@@ -2,6 +2,7 @@ import express from "express";
 import viewEngine from "./config/viewEngine";
 import routeWed from "./route/web";
 import bodyParser from "body-parser";
+import connectDB from "./config/connectDB";
 import "dotenv/config";
 
 const app = express();
@@ -16,6 +17,9 @@ viewEngine(app);
 
 // routes wed
 app.use("/", routeWed);
+
+// connect database
+connectDB();
 
 app.listen(port, () => {
   console.log(`Backend Node.js running on the port ${port}`);
