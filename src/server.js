@@ -1,6 +1,7 @@
 import express from "express";
 import viewEngine from "./config/viewEngine";
 import routeWed from "./route/web";
+import api from "./route/aip";
 import bodyParser from "body-parser";
 import connectDB from "./config/connectDB";
 import "dotenv/config";
@@ -17,6 +18,10 @@ viewEngine(app);
 
 // routes wed
 app.use("/", routeWed);
+
+// routes api
+
+app.use("/", api);
 
 // connect database
 connectDB();
