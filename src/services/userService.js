@@ -5,9 +5,9 @@ const handleLoginUser = async (password, email) => {
   try {
     const data = {};
 
-    // find data user
+    // find data user without password
     let dataUser = await db.User.findOne({
-      attributes: ["email", "roleId", "password"],
+      attributes: { exclude: ["password"] },
       where: { email: email },
       raw: true,
     });
@@ -19,24 +19,33 @@ const handleLoginUser = async (password, email) => {
       return data;
     }
 
+    // Fetch the hashed password for comparison
+    const hashedPassword = await db.User.findOne({
+      attributes: ["password"],
+      where: { email: email },
+      raw: true,
+    });
+
     //compare passwords
-    const comparePassword = await bcrypt.compare(password, dataUser.password);
+    const comparePassword = await bcrypt.compare(
+      password,
+      hashedPassword.password
+    );
     if (!comparePassword) {
       data.errCode = 3;
       data.message = "Password incorrect!";
       return data;
     }
-
-    // delete password from request
-    const { email: userEmail, roleId } = dataUser;
+    // covert image buffer to base64
+    dataUser.image = dataUser.image
+      ? `data:image/jpeg;base64,${dataUser.image.toString("base64")}`
+      : null;
 
     // login success
     data.errCode = 0;
     data.message = "Login successful";
-    data.user = { email: userEmail, roleId };
+    data.user = dataUser;
     return data;
-
-    // end login
   } catch (error) {
     console.error("Error in handleLoginUser:", error);
     throw error;
@@ -44,18 +53,40 @@ const handleLoginUser = async (password, email) => {
 };
 
 const handleGetDataAllUser = async (userId) => {
-  if (userId === "ALL") {
-    return await db.User.findAll({
+  try {
+    if (userId === "ALL") {
+      let users = await db.User.findAll({
+        raw: true,
+        attributes: { exclude: ["password"] },
+      });
+      // cover all fields from buffer to base64
+      users = users.map((user) => ({
+        ...user,
+        image: user.image
+          ? `data:image/jpeg;base64,${user.image.toString("base64")}`
+          : null,
+      }));
+
+      return users;
+    }
+
+    const user = await db.User.findOne({
+      where: { id: userId },
       raw: true,
       attributes: { exclude: ["password"] },
-    }); // Return all users directly
+    });
+    // cover type buffer to base64
+    if (user) {
+      user.image = user.image
+        ? `data:image/jpeg;base64,${user.image.toString("base64")}`
+        : null;
+    }
+    return user;
+    // end code
+  } catch (error) {
+    console.error("Error in handleGetDataAllUser:", error);
+    throw error;
   }
-
-  return await db.User.findOne({
-    where: { id: userId },
-    raw: true,
-    attributes: { exclude: ["password"] },
-  }); // Return the user data directly or null if not found
 };
 
 const handleDeleteDataUser = async (userId) => {
@@ -89,7 +120,6 @@ const handleDeleteDataUser = async (userId) => {
 };
 
 const handleCreateDataUser = async (data) => {
-  console.log(">> check", data);
   try {
     // check email already
     const checkFindEmail = await db.User.findOne({
@@ -101,6 +131,19 @@ const handleCreateDataUser = async (data) => {
         message: "Email already exists! Please choose another one.",
       };
     }
+    // Kiểm tra và xử lý image (Base64)
+    let imageBuffer = null;
+    if (data.image) {
+      const isBase64 = /^data:image\/\w+;base64,/.test(data.image);
+      if (!isBase64) {
+        return {
+          errCode: 2,
+          message: "Invalid image format! Please upload a valid Base64 image.",
+        };
+      }
+      // Chuyển Base64 thành Buffer
+      imageBuffer = Buffer.from(data.image.split(",")[1], "base64");
+    }
     // create user
     const hashedPassword = await hashPassword(data.password);
     await db.User.create({
@@ -110,8 +153,10 @@ const handleCreateDataUser = async (data) => {
       lastName: data.lastName,
       address: data.address,
       phoneNumber: data.phoneNumber,
-      gender: data.sex === 1 ? "true" : "false",
-      roleId: data.role,
+      gender: data.gender,
+      roleId: data.roleId,
+      positionId: data.positionId,
+      image: imageBuffer,
     });
     return {
       errCode: 0,
@@ -145,12 +190,31 @@ const updateDataUser = async (data) => {
         message: "UserId already exists! Please choose another one.",
       };
     }
+    // Kiểm tra và xử lý image (Base64)
+    let imageBuffer = null;
+    if (data.image) {
+      const isBase64 = /^data:image\/\w+;base64,/.test(data.image);
+      if (!isBase64) {
+        return {
+          errCode: 2,
+          message: "Invalid image format! Please upload a valid Base64 image.",
+        };
+      }
+      // Chuyển Base64 thành Buffer
+      imageBuffer = Buffer.from(data.image.split(",")[1], "base64");
+    }
     // update user
     await db.User.update(
       {
         firstName: data.firstName,
         lastName: data.lastName,
         address: data.address,
+        phoneNumber: data.phoneNumber,
+        gender: data.gender,
+        image: data.image,
+        roleId: data.roleId,
+        positionId: data.positionId,
+        image: imageBuffer,
       },
       {
         where: { id: data.id },
@@ -171,10 +235,39 @@ const updateDataUser = async (data) => {
   }
 };
 
+const getAllCode = async (type) => {
+  try {
+    if (type) {
+      const data = await db.AllCode.findAll({
+        where: { type: type },
+        raw: true,
+      });
+      return {
+        errCode: 0,
+        message: "Get all code successfully",
+        data: data,
+      };
+    } else {
+      return {
+        errorCode: 1,
+        message: "Type is required",
+      };
+    }
+  } catch (error) {
+    console.error("Error getting all code:", error);
+    return {
+      errorCode: -1,
+      message:
+        "An error occurred while getting all code. Please try again later.",
+    };
+  }
+};
+
 module.exports = {
   handleLoginUser,
   handleGetDataAllUser,
   handleDeleteDataUser,
   handleCreateDataUser,
   updateDataUser,
+  getAllCode,
 };

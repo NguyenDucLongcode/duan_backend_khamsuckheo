@@ -4,6 +4,7 @@ import {
   handleDeleteDataUser,
   handleCreateDataUser,
   updateDataUser,
+  getAllCode,
 } from "../services/userService";
 
 const handleLogin = async (req, res) => {
@@ -45,7 +46,7 @@ const handleGetAllUser = async (req, res) => {
 };
 
 const handleDeleteUser = async (req, res) => {
-  const userId = req.body.id;
+  const userId = req.query.id;
   let message = await handleDeleteDataUser(userId);
   res.status(200).json(message);
 };
@@ -56,7 +57,16 @@ const handleCreateUser = async (req, res) => {
 };
 
 const handleEditUser = async (req, res) => {
-  let message = await updateDataUser(req.body);
+  try {
+    let message = await updateDataUser(req.body);
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const handleGetAllCode = async (req, res) => {
+  let message = await getAllCode(req.query.type);
   res.status(200).json(message);
 };
 
@@ -66,4 +76,5 @@ module.exports = {
   handleDeleteUser,
   handleCreateUser,
   handleEditUser,
+  handleGetAllCode,
 };
