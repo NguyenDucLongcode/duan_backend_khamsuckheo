@@ -20,6 +20,12 @@ module.exports = (sequelize, DataTypes) => {
         targetKey: "key",
         as: "roleData",
       });
+
+      User.belongsTo(models.Markdown, {
+        foreignKey: "id",
+        targetKey: "doctorId",
+        as: "MarkdownData",
+      });
     }
   }
   User.init(
