@@ -9,13 +9,18 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Schedule.belongsTo(models.AllCode, {
+        foreignKey: "timeType",
+        targetKey: "key",
+        as: "timeTypeValue",
+      });
     }
   }
   Schedule.init(
     {
       currentNumber: DataTypes.INTEGER,
       maxNumber: DataTypes.INTEGER,
-      date: DataTypes.DATE,
+      date: DataTypes.STRING,
       timeType: DataTypes.STRING,
       doctorId: DataTypes.INTEGER,
     },
@@ -24,5 +29,6 @@ module.exports = (sequelize, DataTypes) => {
       modelName: "Schedule",
     }
   );
+
   return Schedule;
 };

@@ -13,7 +13,13 @@ import {
   handleGetAllDoctor,
   handleAddInforDoctor,
   handleGetDoctorById,
+  handlePostCreateDoctorSchedule,
+  handleGetDoctorScheduleById,
+  handleAddTableDoctorInfo,
+  handleGetTableDoctorInfor,
 } from "../controllers/doctorController";
+
+import { handlePatientBookingAppointments } from "../controllers/patientsController";
 
 const router = express.Router();
 router.post("/api/v1/login", handleLogin);
@@ -26,7 +32,19 @@ router.get("/api/v1/get-topDoctor", handleGetTopDoctor);
 router.get("/api/v1/getAllDoctor", handleGetAllDoctor);
 router.post("/api/v1/addInforDoctor", handleAddInforDoctor);
 router.get("/api/v1/getDoctorById", handleGetDoctorById);
+router.post("/api/v1/postCreateDoctorSchedule", handlePostCreateDoctorSchedule);
+router.get("/api/v1/getDoctorScheduleById", handleGetDoctorScheduleById);
+// doctor of table doctor_info
+router.post("/api/v1/addTableDoctorInfo", handleAddTableDoctorInfo);
+router.get("/api/v1/getTableDoctorInfor", handleGetTableDoctorInfor);
 
+// patients
+router.post(
+  "/api/v1/Patient-booking-appointments",
+  handlePatientBookingAppointments
+);
+
+// allCode
 router.get("/api/v1/get-allCode", handleGetAllCode);
-// module.exports = router;
+
 export default router;

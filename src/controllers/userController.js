@@ -29,7 +29,6 @@ const handleLogin = async (req, res) => {
 const handleGetAllUser = async (req, res) => {
   const userId = req.query.id;
   let data = await handleGetDataAllUser(userId);
-  console.log("check data", userId);
   // check data wrong id
   if (!data) {
     res.status(400).json({
