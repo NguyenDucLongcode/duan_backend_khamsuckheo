@@ -12,13 +12,25 @@ const getTopDoctor = async (limitInput) => {
       include: [
         {
           model: db.AllCode, // Truy cập trực tiếp từ db
-          as: "positionData", // Sử dụng alias đã đặt
-          attributes: ["valueEn", "valueVi"], // Chỉ lấy các cột cần thiết
+          as: "positionData",
+          attributes: ["valueEn", "valueVi"],
         },
         {
           model: db.AllCode, // Truy cập trực tiếp từ db
-          as: "roleData", // Sử dụng alias đã đặt
-          attributes: ["valueEn", "valueVi"], // Chỉ lấy các cột cần thiết
+          as: "roleData",
+          attributes: ["valueEn", "valueVi"],
+        },
+        {
+          model: db.Doctor_infor, // Truy cập trực tiếp từ db
+          as: "infoSpecialistData",
+          attributes: ["specialistId", "clinicId"],
+          include: [
+            {
+              model: db.Specialist, // Truy cập bảng Specialist
+              as: "specialistData",
+              attributes: ["name"],
+            },
+          ],
         },
       ],
     });
@@ -67,7 +79,6 @@ const getAllDoctor = async () => {
         ? `data:image/jpeg;base64,${user.image.toString("base64")}`
         : null,
     }));
-    console.log(">>> ", users);
     return {
       errCode: 0,
       message: "Get All doctors successfully",
@@ -191,38 +202,18 @@ const getDoctorById = async (doctorId) => {
 
 const postCreateDoctorSchedule = async (data) => {
   try {
-    // add maxNumber vào data gửi đi
-    data.forEach((item) => {
-      item.maxNumber = "10";
+    let checkSchedule = await db.Schedule.findOne({
+      where: { doctorId: data[0]?.doctorId, date: data[0]?.date },
     });
+    if (checkSchedule) {
+      console.log("check destroy");
+      await db.Schedule.destroy({
+        where: { doctorId: data[0]?.doctorId, date: data[0]?.date },
+      });
+    }
 
-    // Lọc các dữ liệu trùng timeType trong cùng một ngày
-    const existingSchedules = await db.Schedule.findAll({
-      where: { doctorId: 12, date: data[0].date },
-      raw: true,
-    });
-
-    // Lọc các dữ liệu trùng timeType giữa input và DB
-    const uniqueData = [];
-    const seen = new Set();
-
-    // Đưa dữ liệu đã có từ DB vào Set để dễ dàng so sánh
-    existingSchedules.forEach((schedule) => {
-      const key = `${schedule.date}-${schedule.timeType}`;
-      seen.add(key);
-    });
-
-    // Duyệt qua các phần tử mới từ input và kiểm tra sự trùng lặp
-    data.forEach((item) => {
-      const key = `${item.date}-${item.timeType}`;
-
-      if (!seen.has(key)) {
-        uniqueData.push(item);
-        seen.add(key);
-      }
-    });
     // Sau khi lọc, thực hiện bulkCreate
-    await db.Schedule.bulkCreate(uniqueData, {
+    await db.Schedule.bulkCreate(data, {
       ignoreDuplicates: true,
       logging: console.log,
     });
@@ -270,7 +261,6 @@ const getDoctorScheduleById = async (doctorId, scheduleDate) => {
 };
 
 const addTableDoctorInfo = async (data) => {
-  console.log(">>> chek data", data);
   // check id
   if (!data.doctorId) {
     return {
@@ -285,7 +275,8 @@ const addTableDoctorInfo = async (data) => {
     !data.paymentId ||
     !data.addressClinic ||
     !data.nameClinic ||
-    !data.note
+    !data.note ||
+    !data.specialistId
   ) {
     return {
       errCode: 1,
@@ -305,7 +296,7 @@ const addTableDoctorInfo = async (data) => {
   }
 
   //  update table Doctor_info
-  let checkDataInTable = await db.Markdown.findOne({
+  let checkDataInTable = await db.Doctor_infor.findOne({
     where: { doctorId: data.doctorId },
   });
 
@@ -314,6 +305,8 @@ const addTableDoctorInfo = async (data) => {
       {
         priceId: data.priceId,
         provinceId: data.provinceId,
+        specialistId: data.specialistId,
+        clinicId: data.clinicId,
         paymentId: data.paymentId,
         addressClinic: data.addressClinic,
         nameClinic: data.nameClinic,
@@ -334,6 +327,8 @@ const addTableDoctorInfo = async (data) => {
     await db.Doctor_infor.create({
       doctorId: data.doctorId,
       priceId: data.priceId,
+      specialistId: data.specialistId,
+      clinicId: data.clinicId,
       provinceId: data.provinceId,
       paymentId: data.paymentId,
       addressClinic: data.addressClinic,
@@ -351,7 +346,6 @@ const addTableDoctorInfo = async (data) => {
 };
 
 const getTableDoctorInfor = async (doctorId) => {
-  console.log(">>> chek id", doctorId);
   try {
     if (!doctorId) {
       return {

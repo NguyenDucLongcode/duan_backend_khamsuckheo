@@ -146,6 +146,7 @@ const handleCreateDataUser = async (data) => {
     }
     // create user
     const hashedPassword = await hashPassword(data.password);
+    console.log("chekc data");
     await db.User.create({
       email: data.email,
       password: hashedPassword,

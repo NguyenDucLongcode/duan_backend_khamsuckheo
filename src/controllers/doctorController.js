@@ -7,6 +7,7 @@ import {
   getDoctorScheduleById,
   addTableDoctorInfo,
   getTableDoctorInfor,
+  createNewSpecialist,
 } from "../services/doctorService";
 
 const handleGetTopDoctor = async (req, res) => {
